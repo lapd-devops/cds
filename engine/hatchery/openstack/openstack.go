@@ -400,7 +400,7 @@ func (h *HatcheryOpenstack) killDisabledWorkers() {
 
 	for _, w := range workerPoolDisabled {
 		for _, s := range srvs {
-			if s.Name == w.Name {
+			if s.Name == w.Name && !strings.Contains(s.Name, "register-") {
 				log.Info("killDisabledWorkers> killDisabledWorkers %v", s.Name)
 				_ = h.deleteServer(s)
 				break
