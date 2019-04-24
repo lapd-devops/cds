@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -95,23 +96,24 @@ func JSONWithoutHTMLEncode(t interface{}) ([]byte, error) {
 }
 
 // FileMd5sum returns the md5sum ofr a file
-func FileMd5sum(filePath string) (string, error) {
+func FileMd5sum(filePath string) (string, string, error) {
 	file, errop := os.Open(filePath)
 	if errop != nil {
-		return "", fmt.Errorf("unable to copy file content to md5: %v", errop)
+		return "", "", fmt.Errorf("unable to copy file content to md5: %v", errop)
 	}
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
 	hash := md5.New()
 	if _, err := io.Copy(hash, reader); err != nil {
-		return "", fmt.Errorf("error computing md5: %v", err)
+		return "", "", fmt.Errorf("error computing md5: %v", err)
 	}
 
 	hashInBytes := hash.Sum(nil)[:16]
 	sum := hex.EncodeToString(hashInBytes)
 
-	return sum, nil
+	sum64 := base64.StdEncoding.EncodeToString(hashInBytes)
+	return sum, sum64, nil
 }
 
 // FileSHA512sum returns the sha512sum of a file

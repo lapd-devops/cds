@@ -20,6 +20,7 @@ type Cache struct {
 	TmpURL          string `json:"tmp_url"`
 	SecretKey       string `json:"secret_key"`
 	IntegrationName string `json:"integration_name"`
+	MD5SumHex       string `json:"md5sumhex"`
 
 	Files            []string `json:"files"`
 	WorkingDirectory string   `json:"working_directory"`

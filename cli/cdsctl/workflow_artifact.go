@@ -121,7 +121,7 @@ func workflowArtifactDownloadRun(v cli.Values) error {
 			return fmt.Errorf("Invalid sha512sum \ndownloaded file:%s\n%s:%s", sha512sum, f.Name(), a.SHA512sum)
 		}
 
-		md5sum, errmd5 := sdk.FileMd5sum(a.Name)
+		md5sum, _, errmd5 := sdk.FileMd5sum(a.Name)
 		if errmd5 != nil {
 			return errmd5
 		}

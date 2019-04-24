@@ -108,6 +108,11 @@ func (api *API) postPushCacheWithTempURLHandler() service.Handler {
 			return sdk.ErrInvalidName
 		}
 
+		var input sdk.Cache
+		if err := service.UnmarshalBody(r, &input); err != nil {
+			return sdk.WrapError(err, "Cannot unmarshal body")
+		}
+
 		storageDriver, err := api.getStorageDriver(vars[permProjectKey], vars["integrationName"])
 		if err != nil {
 			return err
@@ -124,7 +129,7 @@ func (api *API) postPushCacheWithTempURLHandler() service.Handler {
 			Tag:     tag,
 		}
 
-		url, key, errO := store.StoreURL(&cacheObject)
+		url, key, errO := store.StoreURL(&cacheObject, input.MD5SumHex)
 		if errO != nil {
 			return sdk.WrapError(errO, "postPushCacheWithTempURLHandler>Cannot store cache")
 		}

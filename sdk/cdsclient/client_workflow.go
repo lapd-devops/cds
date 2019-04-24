@@ -3,6 +3,9 @@ package cdsclient
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -307,8 +310,14 @@ func (c *client) workflowCachePushDirectUpload(projectKey, integrationName, ref 
 
 func (c *client) workflowCachePushIndirectUpload(projectKey, integrationName, ref string, tarContent io.Reader) error {
 	uri := fmt.Sprintf("/project/%s/storage/%s/cache/%s/url", projectKey, integrationName, ref)
-	cacheObj := sdk.Cache{}
-	code, err := c.PostJSON(context.Background(), uri, nil, &cacheObj)
+
+	h := md5.New()
+	tc := io.TeeReader(tarContent, h)
+
+	md5hex := hex.EncodeToString(h.Sum(nil))
+	md5s := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	cacheObj := sdk.Cache{MD5SumHex: md5hex}
+	code, err := c.PostJSON(context.Background(), uri, cacheObj, &cacheObj)
 	if err != nil {
 		return err
 	}
@@ -317,10 +326,10 @@ func (c *client) workflowCachePushIndirectUpload(projectKey, integrationName, re
 		return fmt.Errorf("HTTP Code %d", code)
 	}
 
-	return c.workflowCachePushIndirectUploadPost(cacheObj.TmpURL, tarContent)
+	return c.workflowCachePushIndirectUploadPost(cacheObj.TmpURL, tc, md5s)
 }
 
-func (c *client) workflowCachePushIndirectUploadPost(url string, tarContent io.Reader) error {
+func (c *client) workflowCachePushIndirectUploadPost(url string, tarContent io.Reader, md5s string) error {
 	//Post the file to the temporary URL
 	var retry = 10
 	var globalErr error
@@ -331,6 +340,7 @@ func (c *client) workflowCachePushIndirectUploadPost(url string, tarContent io.R
 			return errRequest
 		}
 		req.Header.Set("Content-Type", "application/tar")
+		req.Header.Set("Content-MD5", md5s)
 
 		var resp *http.Response
 		resp, globalErr = http.DefaultClient.Do(req)

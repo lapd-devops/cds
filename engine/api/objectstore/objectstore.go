@@ -29,13 +29,11 @@ type Driver interface {
 // DriverWithRedirect has to be implemented if your storage backend supports temp url
 type DriverWithRedirect interface {
 	// StoreURL returns a temporary url and a secret key to store an object
-	StoreURL(o Object) (url string, key string, err error)
+	StoreURL(o Object, md5sum string) (url string, key string, err error)
 	// FetchURL returns a temporary url and a secret key to fetch an object
 	FetchURL(o Object) (url string, key string, err error)
 	// ServeStaticFilesURL returns a temporary url and a secret key to serve static files in a container
 	ServeStaticFilesURL(o Object, entrypoint string) (string, string, error)
-	// GetPublicURL returns a public url to fetch an object (check your object ACLs before)
-	GetPublicURL(o Object) (url string, err error)
 }
 
 // Kind will define const defining all supported objecstore drivers

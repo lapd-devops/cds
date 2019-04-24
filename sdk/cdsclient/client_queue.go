@@ -324,7 +324,7 @@ func (c *client) queueIndirectArtifactTempURL(ctx context.Context, projectKey, i
 	return globalURLErr
 }
 
-func (c *client) queueIndirectArtifactTempURLPost(url string, content []byte) error {
+func (c *client) queueIndirectArtifactTempURLPost(url string, content []byte, md5sum64 string) error {
 	//Post the file to the temporary URL
 	var retry = 10
 	var globalErr error
@@ -334,6 +334,8 @@ func (c *client) queueIndirectArtifactTempURLPost(url string, content []byte) er
 		if errRequest != nil {
 			return errRequest
 		}
+
+		req.Header.Set("Content-MD5", md5sum64)
 
 		var resp *http.Response
 		resp, globalErr = http.DefaultClient.Do(req)
@@ -378,7 +380,7 @@ func (c *client) queueIndirectArtifactUpload(ctx context.Context, projectKey, in
 		return err512
 	}
 
-	md5sum, errmd5 := sdk.FileMd5sum(filePath)
+	md5sum, md5sum64, errmd5 := sdk.FileMd5sum(filePath)
 	if errmd5 != nil {
 		return errmd5
 	}
@@ -412,12 +414,12 @@ func (c *client) queueIndirectArtifactUpload(ctx context.Context, projectKey, in
 		return errFileContent
 	}
 
-	if err := c.queueIndirectArtifactTempURLPost(art.TempURL, fileContent); err != nil {
+	if err := c.queueIndirectArtifactTempURLPost(art.TempURL, fileContent, md5sum64); err != nil {
 		// If we got a 401 error from the objectstore, probably because temporary URL is not
 		// replicated on all cluster. Wait 5s before use it
 		if strings.Contains(err.Error(), "401 Unauthorized: Temp URL invalid") {
 			time.Sleep(5 * time.Second)
-			if err := c.queueIndirectArtifactTempURLPost(art.TempURL, fileContent); err != nil {
+			if err := c.queueIndirectArtifactTempURLPost(art.TempURL, fileContent, md5sum64); err != nil {
 				return err
 			}
 		}
@@ -458,7 +460,7 @@ func (c *client) queueDirectArtifactUpload(projectKey, integrationName string, n
 		return err512
 	}
 
-	md5sum, errmd5 := sdk.FileMd5sum(filePath)
+	md5sum, _, errmd5 := sdk.FileMd5sum(filePath)
 	if errmd5 != nil {
 		return errmd5
 	}
